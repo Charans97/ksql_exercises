@@ -1,0 +1,125 @@
+curl -v http://localhost:8083/connectors
+
+
+
+curl -X POST -d @req.json http://localhost:8083/connectors --header "content-Type:application/json"
+
+
+
+curl -X POST -H "Content-Type: application/json" --data '{
+  "name": "datagen-connector",
+  "config": {
+    "connector.class": "io.confluent.kafka.connect.datagen.DatagenConnector",
+    "key.converter": "org.apache.kafka.connect.storage.StringConverter",
+    "value.converter": "org.apache.kafka.connect.json.JsonConverter",
+    "value.converter.schemas.enable": "false",
+    "tasks.max": "1",
+    "kafka.topic": "purchase-topic",
+    "quickstart": "purchase",
+    "iterations": "100",
+    "schema.filename": "purchase-schema.json "
+  }
+}' http://localhost:8083/connectors
+
+..............................................................................................
+Datagen connector
+
+ curl -X POST -H "Content-Type: application/json" --data '{
+  "name": "datagen-connect4",
+  "config": {
+    "connector.class": "io.confluent.kafka.connect.datagen.DatagenConnector",
+    "key.converter": "org.apache.kafka.connect.storage.StringConverter",
+    "value.converter": "org.apache.kafka.connect.json.JsonConverter",
+    "value.converter.schemas.enable": "false",
+    "tasks.max": "1",
+    "kafka.topic": "purchase-detail",
+    "schema.filename": "/home/charan/ksql_exercises/purchase-schema.json"
+  }
+}' http://localhost:8083/connectors
+
+
+curl -X PUT localhost:8083/connectors/datagen-connect4/pause
+
+curl -X DELETE localhost:8083/connectors/datagen-connector
+
+
+curl -X POST -H "Content-Type: application/json" --data '{
+  "name": "datagen-connector",
+  "config": {
+    "connector.class": "io.confluent.kafka.connect.datagen.DatagenConnector",
+    "key.converter": "org.apache.kafka.connect.storage.StringConverter",
+    "value.converter": "org.apache.kafka.connect.json.JsonConverter",
+    "value.converter.schemas.enable": "false",
+    "tasks.max": "1",
+    "kafka.topic": "purchase-topic",
+    "schema.filename": "purchase-schema.json"
+  }
+}' http://localhost:8083/connectors
+
+
+
+
+..............................................................................................
+jdbc psql connector
+
+CREATE SOURCE CONNECTOR postgres_source WITH (
+  "name": "postgres-source-connector",
+  "config": 
+    "connector.class": "io.confluent.connect.jdbc.JdbcSourceConnector",
+    "tasks.max": "1",
+    "connection.url": "jdbc:postgresql://postgres:your-5432/plf_training",
+    "connection.user": "platformatory",
+    "connection.password": "plf_password",
+    "topic.prefix": "product_",
+    'mode' = 'bulk',
+    'incrementing.column.name' = 'id', 
+    "table.whitelist": "product"
+);
+
+CREATE SOURCE CONNECTOR postgres_source WITH (
+  "name": "postgres-source-connector",
+  "config": 
+    "connector.class": "io.confluent.connect.jdbc.JdbcSourceConnector",
+    "tasks.max": "1",
+    "connection.url": "jdbc:postgresql://postgres:your-5432/plf_training",
+    "connection.user": "platformatory",
+    "connection.password": "plf_password",
+    "topic.prefix": "product_",
+    'incrementing.column.name' = 'id', 
+    "table.whitelist": "product"
+);
+
+docker-compose exec -it postgres psql "postgres://platformatory:plf_password@postgres:5432/plf_training"
+
+     - POSTGRES_DB=plf_training
+      - POSTGRES_USER=platformatory
+      - POSTGRES_PASSWORD=plf_password
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+
+
+EXECUTE CONNECTOR PAUSE postgres_source;
+
+curl -X DELETE http://localhost:8083/connectors/postgres-source-connector
+
+
+curl -X PUT -H "Content-Type: application/json" --data '{"connector.state":"PAUSED"}' http://localhost:8083/connectors/POSTGRES_SOURCE/delete
+
+
+
+io.confluent.connect.elasticsearch.ElasticsearchSinkConnector
+
+io.confluent.connect.jdbc.JdbcSourceConnector
+
+CREATE SOURCE CONNECTOR postgres_source_3 WITH (
+  'name'='POSTGRES_SOURCE_2',
+  'connector.class'='io.confluent.connect.jdbc.JdbcSourceConnector',
+  'tasks.max'='1',
+  'connection.url'='jdbc:postgresql://localhost:5432/plf_training',
+  'connection.user'='platformatory',
+  'connection.password'='plf_password',
+  'topic.prefix'='product_',
+  'mode'='incrementing',
+  'incrementing.column.name'='id',
+  'table.whitelist'='product'
+);
