@@ -1,0 +1,244 @@
+
+CREATE STREAM purchase_4 (
+    id INT,
+    product_id INT,
+    quantity INT,
+    customer_id STRING,
+    discount DOUBLE
+) WITH (KAFKA_TOPIC='purchase-detail', VALUE_FORMAT='JSON');
+
+
+
+ROWTIME,
+       TIMESTAMPTOSTRING(ROWTIME, 'yyyy-MM-dd HH:mm:ss.SSS') AS rowtime_formatted,
+
+
+
+SELECT TIMESTAMPTOSTRING(TIMESTAMP, 'yyyy-MM-dd HH:mm:ss.SSS') AS time * FROM JOINED_DATA1;
+
+
+SELECT product_id,product_name,product_category,MAX(_quantity) AS quantity FROM joined_data1
+  WINDOW HOPPING (SIZE 30 MINUTES, ADVANCE BY 5 MINUTES)
+  WHERE PRODUCT_ID=MAX(PURCHASE_QUANTITY)
+  GROUP BY PRODUCT_ID
+  EMIT CHANGES;
+
+
+SELECT product_id,product_name,product_category,PRODUCT_PRICE-(PRODUCT_PRICE*(DISCOUNT/100)) AS DISCOUNT_PRICE,PURCHASE_QUANTITY,(PRODUCT_PRICE-(PRODUCT_PRICE*(DISCOUNT/100)))*PURCHASE_QUANTITY AS FINALPRICE ,MAX(purchase_quantity) AS quantity FROM joined_data1
+  WINDOW HOPPING (SIZE 30 MINUTES, ADVANCE BY 5 MINUTES)
+  GROUP BY PRODUCT_ID
+  EMIT CHANGES;
+
+SELECT product_id,product_name,product_category,PRODUCT_PRICE-(PRODUCT_PRICE*(DISCOUNT/100)) AS DISCOUNT_PRICE,PURCHASE_QUANTITY,(PRODUCT_PRICE-(PRODUCT_PRICE*(DISCOUNT/100)))*PURCHASE_QUANTITY AS FINALPRICE FROM JOINED_DATA1
+WINDOW HOPPING (SIZE 30 MINUTES, ADVANCE BY 5 MINUTES)
+  GROUP BY PRODUCT_ID
+  EMIT CHANGES;
+  
+  
+PRODUCT_PRICE-(PRODUCT_PRICE*(DISCOUNT/100)) AS QUANTITY
+
+
+
+SELECT product_id,product_name,product_category,PRODUCT_PRICE-(PRODUCT_PRICE*(DISCOUNT/100)) AS DISCOUNT_PRICE,(PRODUCT_PRICE-(PRODUCT_PRICE*(DISCOUNT/100)))*PURCHASE_QUANTITY AS FINALPRICE ,MAX(purchase_quantity) AS quantity FROM joined_data1
+>  WINDOW HOPPING (SIZE 30 MINUTES, ADVANCE BY 5 MINUTES)
+>  GROUP BY PRODUCT_ID
+>  EMIT CHANGES;
+
+.............................
+SELECT product_id,product_name,product_category,PRODUCT_PRICE-(PRODUCT_PRICE*(DISCOUNT/100)) AS DISCOUNT_PRICE,PURCHASE_QUANTITY,(PRODUCT_PRICE-(PRODUCT_PRICE*(DISCOUNT/100)))*PURCHASE_QUANTITY AS FINALPRICE FROM JOINED_DATA1
+WINDOW HOPPING (SIZE 30 MINUTES, ADVANCE BY 5 MINUTES)
+  GROUP BY PRODUCT_ID
+  EMIT CHANGES;
+
+ SELECT 
+    product_id,
+    MAX(FINALPRICE) AS MS
+FROM 
+    joined_data1 
+WINDOW 
+    HOPPING (SIZE 30 MINUTES, ADVANCE BY 5 MINUTES) 
+GROUP BY 
+    product_id 
+EMIT CHANGES;
+
+...........
+ SELECT 
+    product_id,
+    MAX(FINAL_PRICE) AS MS
+FROM 
+    joined_data1 
+WINDOW 
+    HOPPING (SIZE 30 MINUTES, ADVANCE BY 5 MINUTES) 
+GROUP BY 
+    product_id 
+EMIT CHANGES;
+
+
+
+SELECT 
+    product_id,
+    MAX(FINALPRICE) AS MS,
+    TIMESTAMPTOSTRING(TIMESTAMP, 'yyyy-MM-dd HH:mm:ss') AS START_WINDOW,
+    TIMESTAMPTOSTRING(TIMESTAMP, 'yyyy-MM-dd HH:mm:ss') AS END_WINDOW
+FROM 
+    FINAL_CAL1
+WINDOW 
+    HOPPING (SIZE 30 MINUTES, ADVANCE BY 5 MINUTES)
+GROUP BY 
+    product_id 
+EMIT CHANGES;
+
+
+
+
+CREATE STREAM FINAL_CAL AS
+ SELECT 
+    product_id,
+    product_name,
+    product_category,
+    (PRODUCT_PRICE - (PRODUCT_PRICE * (DISCOUNT / 100))) AS DISCOUNT_PRICE,
+    PURCHASE_QUANTITY,
+    ((PRODUCT_PRICE - (PRODUCT_PRICE * (DISCOUNT / 100))) * PURCHASE_QUANTITY) AS FINALPRICE
+FROM 
+    joined_data1;
+
+
+CREATE STREAM FINAL_CAL2 AS
+ SELECT 
+    product_id,
+    product_name,
+    product_category,
+    IMESTAMPTOSTRING(TIMESTAMP, 'yyyy-MM-dd HH:mm:ss') AS TIME
+FROM 
+    joined_data1;
+
+
+CREATE STREAM product_payload 
+(payload STRUCT<
+    id INT,
+    created BIGINT,
+    modified BIGINT,
+    name STRING,
+    category STRING,
+    price DOUBLE>
+) WITH (KAFKA_TOPIC='product_product', VALUE_FORMAT='JSON');
+
+
+
+
+SELECT payload->id AS product_id,
+       payload->created, 
+       payload->modified, 
+       payload->name,
+       payload->category,
+       payload->price
+    FROM product_payload;
+
+
+
+CREATE TABLE product_10 AS
+    SELECT id AS product_id PRIMARY KEY,
+           payload->created, 
+           payload->modified, 
+           payload->name,
+           payload->category,
+           payload->price
+    FROM product_payload
+    EMIT CHANGES;
+
+CREATE TABLE product_7 AS
+    SELECT id,
+           created, 
+           modified, 
+           name,
+           category,
+           price
+    FROM product_payload
+    EMIT CHANGES;
+
+
+
+CREATE STREAM product_9
+    AS
+    SELECT payload->id AS product_id,
+           payload->created,
+           payload->modified,
+           payload->name,
+           payload->category,
+           payload->price
+    FROM product_payload
+    PARTITION BY payload->id
+    EMIT CHANGES;
+
+
+
+
+
+
+
+CREATE TABLE product_table (
+    product_id INT PRIMARY KEY,
+    created BIGINT,
+    modified BIGINT,
+    name STRING,
+    category STRING,
+    price DOUBLE
+) WITH (
+    KAFKA_TOPIC='PRODUCT_9',
+    VALUE_FORMAT='JSON'
+);
+
+
+
+
+
+
+
+
+
+
+CREATE STREAM joined_data1 AS
+    SELECT p.product_id AS product_id,
+       p.created AS created,
+       p.modified AS modified,
+       p.name AS product_name,
+       p.category AS product_category,
+       p.price AS product_price,
+       pr.quantity AS purchase_quantity,
+       pr.customer_id AS customer_id,
+       pr.ROWTIME AS timestamp
+       pr.discount AS discount
+FROM purchase_2 pr
+INNER JOIN product_table p
+ON p.product_id = pr.product_id EMIT CHANGES;
+
+
+ SELECT product_id, TIMESTAMPTOSTRING('dd/MM/yyyy HH:mm:ss') as time,customer_id FROM JOINED_DATA1; 
+
+
+
+SET 'auto.offset.reset' = 'earliest';
+
+
+
+
+SELECT product_id,product_name,product_category 
+FROM JOINED_DATA
+WHERE purchase_quantity=(SELECT MAX(purchase_quantity) AS max_purchase
+    FROM JOINED_DATA
+    EMIT CHANGES);
+
+
+
+
+SELECT product_id,product_name,product_category 
+FROM JOINED_DATA
+WINDOW HOPPING (SIZE 1 HOUR, ADVANCE BY 5 MINUTES)
+WHERE MAX
+
+
+SELECT regionid, COUNT(*) FROM pageviews
+  WINDOW HOPPING (SIZE 30 SECONDS, ADVANCE BY 10 SECONDS)
+  WHERE UCASE(gender)='FEMALE' AND LCASE (regionid) LIKE '%_6'
+  GROUP BY regionid
+  EMIT CHANGES;
